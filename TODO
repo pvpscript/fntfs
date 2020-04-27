@@ -1,0 +1,3 @@
+-> Create the main file for this program;
+-> Set global variables regarding Windows' limitations on maximum size of name and/or path, and reserved characters and names;
+-> Depth first search in folders, then search for files inside them.
