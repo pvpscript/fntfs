@@ -6,4 +6,4 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "friendly-ntfs.h"
+#include "fntfs.h"
