@@ -7,3 +7,4 @@
 #include <unistd.h>
 
 #include "fntfs.h"
+#include "defs.h"
