@@ -7,6 +7,9 @@
 
 int main(int argc, char **argv)
 {	
+	testing();
+	exit(0);
+
 	DIR *directory = opendir(argv[1]);	
 
 	depth_first(directory, argv[1]);

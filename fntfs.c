@@ -6,13 +6,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "fntfs.h"
-#include "config.h"
-
 typedef struct {
 	char *old_name;
 	char *new_name;
 } Reserved;
+
+#include "config.h"
 
 static char *cat_path(char *first, char *final)
 {
@@ -42,7 +41,7 @@ static int is_directory(const char *path)
 	return S_ISDIR(buf.st_mode);
 }
 
-void testing()
+static void testing()
 {
 	int i;
 
@@ -58,7 +57,7 @@ void testing()
 	printf(COUNT_OF(r_names));
 }
 
-char *depth_first(DIR *directory, char *path)
+static char *depth_first(DIR *directory, char *path)
 {
 	struct dirent *data;
 	char *full_path;
@@ -81,4 +80,16 @@ char *depth_first(DIR *directory, char *path)
 	}
 
 	return NULL;
+}
+
+int main(int argc, char **argv)
+{	
+	testing();
+	exit(0);
+
+	DIR *directory = opendir(argv[1]);	
+
+	depth_first(directory, argv[1]);
+
+	return 0;
 }

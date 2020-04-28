@@ -1,16 +1,25 @@
 CC = cc
 DEBUG = -g
-CFLAGS = $(DEBUG) -ansi -pedantic -Wall
+CFLAGS = ${DEBUG} -ansi -pedantic -Wall
 
-fntfs: main.o fntfs.o
-	$(CC) $(CFLAGS) -o fntfs main.o fntfs.o
+SRC = fntfs.c
+OBJ = ${SRC:.c=.o}
 
+all: fntfs
 
-main.o: main.c main.h
-	$(CC) $(CFLAGS) -c main.c
+.c.o:
+	${CC} -c ${CFLAGS} $<
 
-fntfs.o: fntfs.c fntfs.h config.h
-	$(CC) $(CFLAGS) -c fntfs.c
+${OBJ}: config.h
+
+fntfs: ${OBJ}
+	${CC} -o $@ ${OBJ} ${CFLAGS}
+
+#fntfs: fntfs.o
+#	$(CC) $(CFLAGS) -o fntfs fntfs.o config.h
+#
+#fntfs.o: fntfs.c config.h
+#	$(CC) $(CFLAGS) -c fntfs.c
 
 
 clean:
