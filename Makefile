@@ -1,5 +1,6 @@
 CC = cc
-CFLAGS = -ansi -pedantic -Wall
+DEBUG = -g
+CFLAGS = $(DEBUG) -ansi -pedantic -Wall
 
 fntfs: main.o fntfs.o
 	$(CC) $(CFLAGS) -o fntfs main.o fntfs.o
