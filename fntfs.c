@@ -7,7 +7,12 @@
 #include <unistd.h>
 
 #include "fntfs.h"
-#include "defs.h"
+#include "config.h"
+
+typedef struct {
+	char *old_name;
+	char *new_name;
+} Reserved;
 
 static char *cat_path(char *first, char *final)
 {
@@ -37,24 +42,42 @@ static int is_directory(const char *path)
 	return S_ISDIR(buf.st_mode);
 }
 
+void testing()
+{
+	int i;
+
+/*	puts("Reserved chars");
+	for (i = 0; i < COUNT_OF(r_chars); i++)
+		printf("%c\n", r_chars[i]);
+
+	puts("Reserved names");
+	for (i = 0; i < COUNT_OF(r_names); i++)
+		printf("%s\n", r_names[i]);
+*/
+	printf(COUNT_OF(r_chars));
+	printf(COUNT_OF(r_names));
+}
+
 char *depth_first(DIR *directory, char *path)
 {
 	struct dirent *data;
 	char *full_path;
 
 	while ((data = readdir(directory)) != NULL) {
-		full_path = (strcmp(data->d_name, ".") == 0 
-				|| strcmp(data->d_name, "..") == 0)
-			? NULL
-			: cat_path(path, data->d_name);
+		if (strcmp(data->d_name, ".") != 0
+				&& strcmp(data->d_name, "..") != 0) {
+			full_path = cat_path(path, data->d_name);
 
-		printf("File serial number %lu\n", data->d_ino);
-		printf("Name of entry \"%s\"\n\n", data->d_name);
+			printf("File serial number %lu\n", data->d_ino);
+			printf("Name of entry \"%s\"\n\n", data->d_name);
 
-		printf("FULLPATH: \"%s\"\n", full_path);
-/*		getchar(); */
-		if (is_directory(full_path))
-			depth_first(opendir(full_path), full_path);
+			printf("FULLPATH: \"%s\"\n", full_path);
+	/*		getchar(); */
+			if (is_directory(full_path))
+				depth_first(opendir(full_path), full_path);
+
+			
+		}
 	}
 
 	return NULL;

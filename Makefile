@@ -9,7 +9,7 @@ fntfs: main.o fntfs.o
 main.o: main.c main.h
 	$(CC) $(CFLAGS) -c main.c
 
-fntfs.o: fntfs.c fntfs.h defs.h
+fntfs.o: fntfs.c fntfs.h config.h
 	$(CC) $(CFLAGS) -c fntfs.c
 
 
