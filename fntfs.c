@@ -41,6 +41,11 @@ static int is_directory(const char *path)
 	return S_ISDIR(buf.st_mode);
 }
 
+static int has_reserved_entry(char *path, Reserved *entry)
+{
+
+}
+
 static void testing()
 {
 	int i;
@@ -53,8 +58,8 @@ static void testing()
 	for (i = 0; i < COUNT_OF(r_names); i++)
 		printf("%s\n", r_names[i]);
 */
-	printf(COUNT_OF(r_chars));
-	printf(COUNT_OF(r_names));
+	printf("%ld\n", COUNT_OF(r_chars));
+	printf("%ld\n", COUNT_OF(r_names));
 }
 
 static char *depth_first(DIR *directory, char *path)
@@ -84,8 +89,8 @@ static char *depth_first(DIR *directory, char *path)
 
 int main(int argc, char **argv)
 {	
-	testing();
-	exit(0);
+/*	testing();
+	exit(0);*/
 
 	DIR *directory = opendir(argv[1]);	
 
