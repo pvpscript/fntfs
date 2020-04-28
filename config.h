@@ -5,15 +5,15 @@
 #define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 
 static const Reserved r_chars[] = {
-	{"<",	"[lt]"},
-	{">", 	"[gt]"},
-	{":", 	"[cl]"},
-	{"\"",	"[qt]"}, 
-	{"/", 	"[fs]"},
-	{"\\", 	"[bs]"},
-	{"|", 	"[vb]"},
-	{"?", 	"[qm]"},
-	{"*",	"[ak]"},
+	{"<",		"[lt]"},
+	{">",	 	"[gt]"},
+	{":",	 	"[cl]"},
+	{"\"",		"[qt]"}, 
+	{"/",	 	"[fs]"},
+	{"\\", 		"[bs]"},
+	{"|",	 	"[vb]"},
+	{"?",	 	"[qm]"},
+	{"*",		"[ak]"},
 };
 
 static const Reserved r_names[] = {
