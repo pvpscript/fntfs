@@ -41,13 +41,13 @@ static int is_directory(const char *path)
 	return S_ISDIR(buf.st_mode);
 }
 
-static int replace_substr(char **entry, char **location,
+static int replace_substr(char **entry, char **offset,
 		const Reserved replace)
 {
 	size_t entry_len = strlen(*entry);
 	size_t oname_len = strlen(replace.old_name);
 	size_t nname_len = strlen(replace.new_name);
-	size_t loc_offset = *location - *entry;
+	size_t loc_offset = *offset - *entry;
 
 	if (nname_len - oname_len > 0) {
 		*entry = realloc(*entry, sizeof(char) 
@@ -56,47 +56,31 @@ static int replace_substr(char **entry, char **location,
 			return 0;
 	}
 
-	*location += oname_len;
+	*offset += oname_len;
 
-	memcpy(*entry+loc_offset+nname_len, *location, strlen(*location)+1);
+	memcpy(*entry+loc_offset+nname_len, *offset, strlen(*offset)+1);
 	memcpy(*entry+loc_offset, replace.new_name, nname_len);
 
-	*location += (nname_len - oname_len);
+	*offset += (nname_len - oname_len);
 
 	return 1;
-}
-
-static void testing()
-{
-	int i;
-
-/*	puts("Reserved chars");
-	for (i = 0; i < COUNT_OF(r_chars); i++)
-		printf("%c\n", r_chars[i]);
-
-	puts("Reserved names");
-	for (i = 0; i < COUNT_OF(r_names); i++)
-		printf("%s\n", r_names[i]);
-*/
-	printf("%ld\n", COUNT_OF(r_chars));
-	printf("%ld\n", COUNT_OF(r_names));
 }
 
 static char *replace_chars(char *name)
 {
 	char *new_name;
-	char *tmp;
+	char *offset;
 	int i;
 
 	new_name = malloc(sizeof(char) * (strlen(name) + 1));
-	if (new_name == NULL)
+	if (!new_name)
 		return NULL;
 	strcpy(new_name, name);
 
 	for (i = 0; i < COUNT_OF(r_chars); i++) {
-		tmp = new_name;
-		while((tmp = strstr(tmp, r_chars[i].old_name)) != NULL)
-			if (!replace_substr(&new_name, &tmp, r_chars[i]))
+		offset = new_name;
+		while((offset = strstr(offset, r_chars[i].old_name)))
+			if (!replace_substr(&new_name, &offset, r_chars[i]))
 				return NULL;
 	}
 
@@ -111,9 +95,9 @@ static char *replace_names(char *name)
 
 	for (i = 0; i < COUNT_OF(r_names); i++) {
 		offset = strstr(name, r_names[i].old_name);
-		if (offset != NULL	&& offset - name == 0) {
+		if (offset && offset - name == 0) {
 			new_name = malloc((strlen(name) + 1) * sizeof(*new_name));
-			if (new_name == NULL)
+			if (!new_name)
 				return NULL;
 			strcpy(new_name, name);
 
@@ -132,9 +116,9 @@ static char *depth_first(DIR *directory, char *path)
 {
 	struct dirent *data;
 	char *full_path;
-	char *new_name;
+	char *new_name = NULL;
 
-	while ((data = readdir(directory)) != NULL) {
+	while ((data = readdir(directory))) {
 		if (strcmp(data->d_name, ".") != 0
 				&& strcmp(data->d_name, "..") != 0) {
 			full_path = cat_path(path, data->d_name);
@@ -148,13 +132,12 @@ static char *depth_first(DIR *directory, char *path)
 				depth_first(opendir(full_path), full_path);
 				
 			new_name = replace_names(data->d_name);
-			new_name = (new_name == NULL)
-				? replace_chars(data->d_name)
-				: replace_chars(new_name);
-			if (new_name != NULL &&
-				strcmp(new_name, data->d_name) != 0) {
+			new_name = (new_name)
+				? replace_chars(new_name)
+				: replace_chars(data->d_name);
+			if (new_name && strcmp(new_name, data->d_name) != 0) {
 				printf("%s -> %s\n", data->d_name, new_name);
-			}	
+			}
 		}
 	}
 
