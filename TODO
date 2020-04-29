@@ -1,5 +1,0 @@
--> Create the main file for this program; [DONE]
--> Set global variables regarding Windows' limitations on maximum size of name and/or path, and reserved characters and names; [DONE]
--> Depth first search in folders, then search for files inside them; [DONE]
--> Write the README file;
--> Add function prototypes to the friendly-ntfs header file;
