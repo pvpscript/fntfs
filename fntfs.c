@@ -41,9 +41,36 @@ static int is_directory(const char *path)
 	return S_ISDIR(buf.st_mode);
 }
 
+static int replace_substr(char **entry, char **location,
+		const Reserved replace)
+{
+	size_t entry_len = strlen(*entry);
+	size_t oname_len = strlen(replace.old_name);
+	size_t nname_len = strlen(replace.new_name);
+	size_t loc_offset = *location - *entry;
+
+	if (nname_len - oname_len > 0) {
+		*entry = realloc(*entry, sizeof(char) 
+				* (entry_len + nname_len - oname_len + 1));
+		if (*entry == NULL)
+			return 0;
+	}
+
+	*location += oname_len;
+
+	memcpy(*entry+loc_offset+nname_len, *location, strlen(*location)+1);
+	memcpy(*entry+loc_offset, replace.new_name, nname_len);
+
+	*location += (nname_len - oname_len);
+
+	return 1;
+}
+
 static int has_reserved_entry(char *path, Reserved *entry)
 {
-
+	char *entry_name = strrchr(path, '/') + 1;
+	
+	
 }
 
 static void testing()
@@ -66,21 +93,32 @@ static char *depth_first(DIR *directory, char *path)
 {
 	struct dirent *data;
 	char *full_path;
+	char *new_name;
+	char *tmp;
+	int i;
 
 	while ((data = readdir(directory)) != NULL) {
 		if (strcmp(data->d_name, ".") != 0
 				&& strcmp(data->d_name, "..") != 0) {
 			full_path = cat_path(path, data->d_name);
 
-			printf("File serial number %lu\n", data->d_ino);
+/*			printf("File serial number %lu\n", data->d_ino);
 			printf("Name of entry \"%s\"\n\n", data->d_name);
 
-			printf("FULLPATH: \"%s\"\n", full_path);
+			printf("FULLPATH: \"%s\"\n", full_path);*/
 	/*		getchar(); */
 			if (is_directory(full_path))
 				depth_first(opendir(full_path), full_path);
-
-			
+				
+			new_name = malloc(sizeof(char) * (strlen(data->d_name) + 1));
+			memcpy(new_name, data->d_name, strlen(data->d_name)+1);
+			for (i = 0; i < COUNT_OF(r_chars); i++) {
+				tmp = new_name;
+				while((tmp = strstr(tmp, r_chars[i].old_name)) != NULL)
+					replace_substr(&new_name, &tmp, r_chars[i]);
+			}
+			if (strcmp(new_name, data->d_name) != 0)
+				printf("%s -> %s\n", data->d_name, new_name);
 		}
 	}
 
