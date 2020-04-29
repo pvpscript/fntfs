@@ -66,13 +66,6 @@ static int replace_substr(char **entry, char **location,
 	return 1;
 }
 
-static int has_reserved_entry(char *path, Reserved *entry)
-{
-	char *entry_name = strrchr(path, '/') + 1;
-	
-	
-}
-
 static void testing()
 {
 	int i;
@@ -89,13 +82,57 @@ static void testing()
 	printf("%ld\n", COUNT_OF(r_names));
 }
 
+static char *replace_chars(char *name)
+{
+	char *new_name;
+	char *tmp;
+	int i;
+
+	new_name = malloc(sizeof(char) * (strlen(name) + 1));
+	if (new_name == NULL)
+		return NULL;
+	strcpy(new_name, name);
+
+	for (i = 0; i < COUNT_OF(r_chars); i++) {
+		tmp = new_name;
+		while((tmp = strstr(tmp, r_chars[i].old_name)) != NULL)
+			if (!replace_substr(&new_name, &tmp, r_chars[i]))
+				return NULL;
+	}
+
+	return new_name;
+}
+
+static char *replace_names(char *name)
+{
+	char *new_name;
+	char *offset;
+	int i;
+
+	for (i = 0; i < COUNT_OF(r_names); i++) {
+		offset = strstr(name, r_names[i].old_name);
+		if (offset != NULL	&& offset - name == 0) {
+			new_name = malloc((strlen(name) + 1) * sizeof(*new_name));
+			if (new_name == NULL)
+				return NULL;
+			strcpy(new_name, name);
+
+			offset = new_name + (offset - name);
+			if (!replace_substr(&new_name, &offset, r_names[i]))
+				return NULL;
+
+			return new_name;
+		}
+	}
+
+	return NULL;
+}
+
 static char *depth_first(DIR *directory, char *path)
 {
 	struct dirent *data;
 	char *full_path;
 	char *new_name;
-	char *tmp;
-	int i;
 
 	while ((data = readdir(directory)) != NULL) {
 		if (strcmp(data->d_name, ".") != 0
@@ -110,15 +147,14 @@ static char *depth_first(DIR *directory, char *path)
 			if (is_directory(full_path))
 				depth_first(opendir(full_path), full_path);
 				
-			new_name = malloc(sizeof(char) * (strlen(data->d_name) + 1));
-			memcpy(new_name, data->d_name, strlen(data->d_name)+1);
-			for (i = 0; i < COUNT_OF(r_chars); i++) {
-				tmp = new_name;
-				while((tmp = strstr(tmp, r_chars[i].old_name)) != NULL)
-					replace_substr(&new_name, &tmp, r_chars[i]);
-			}
-			if (strcmp(new_name, data->d_name) != 0)
+			new_name = replace_names(data->d_name);
+			new_name = (new_name == NULL)
+				? replace_chars(data->d_name)
+				: replace_chars(new_name);
+			if (new_name != NULL &&
+				strcmp(new_name, data->d_name) != 0) {
 				printf("%s -> %s\n", data->d_name, new_name);
+			}	
 		}
 	}
 
