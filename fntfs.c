@@ -103,21 +103,19 @@ static char *replace_chars(char *name)
 	return new_name;
 }
 
-/*static char *replace_names(char *name)
+static char *replace_names(char *name)
 {
 	char *new_name;
 	long offset = 0;
 	int i;
 
 	for (i = 0; i < COUNT_OF(r_names); i++) {
-		offset = strstr(name, r_names[i].old_name);
-		if (offset && offset - name == 0) {
+		if (o_strstr(name, r_names[i].old_name, &offset) && !offset) {
 			new_name = malloc((strlen(name) + 1) * sizeof(*new_name));
 			if (!new_name)
 				return NULL;
 			strcpy(new_name, name);
 
-			offset = new_name + (offset - name);
 			if (!replace_substr(&new_name, &offset, r_names[i]))
 				return NULL;
 
@@ -126,7 +124,7 @@ static char *replace_chars(char *name)
 	}
 
 	return NULL;
-}*/
+}
 
 static char *depth_first(DIR *directory, char *path)
 {
@@ -148,7 +146,7 @@ static char *depth_first(DIR *directory, char *path)
 			if (is_directory(full_path))
 				depth_first(opendir(full_path), full_path);
 				
-			/*new_name = replace_names(data->d_name);*/
+			new_name = replace_names(data->d_name);
 			new_name2 = (new_name)
 				? replace_chars(new_name)
 				: replace_chars(data->d_name);
@@ -156,6 +154,7 @@ static char *depth_first(DIR *directory, char *path)
 				printf("%s -> %s\n", data->d_name, new_name2);
 			}
 
+			free(new_name);
 			free(new_name2);
 			free(full_path);
 
