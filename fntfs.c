@@ -41,35 +41,48 @@ static int is_directory(const char *path)
 	return S_ISDIR(buf.st_mode);
 }
 
-static int replace_substr(char **entry, char **offset,
+static int replace_substr(char **entry, long *offset,
 		const Reserved replace)
 {
 	size_t entry_len = strlen(*entry);
 	size_t oname_len = strlen(replace.old_name);
 	size_t nname_len = strlen(replace.new_name);
-	size_t loc_offset = *offset - *entry;
 
 	if (nname_len - oname_len > 0) {
 		*entry = realloc(*entry, sizeof(char) 
 				* (entry_len + nname_len - oname_len + 1));
-		if (*entry == NULL)
+		if (!*entry)
 			return 0;
 	}
 
-	*offset += oname_len;
-
-	memcpy(*entry+loc_offset+nname_len, *offset, strlen(*offset)+1);
-	memcpy(*entry+loc_offset, replace.new_name, nname_len);
-
-	*offset += (nname_len - oname_len);
+	memcpy(*entry+*offset+nname_len, *entry+*offset+oname_len, entry_len-*offset-oname_len+1);
+	memcpy(*entry+*offset, replace.new_name, nname_len);
+	*offset += nname_len;
 
 	return 1;
+}
+
+static int o_strstr(const char *haystack, const char *needle, long *offset)
+{
+    long h_offset = 0;
+    const char *h;
+    const char *n;
+    
+    for (haystack += *offset; *haystack; haystack++, h_offset++) {
+        for (h = haystack, n = needle; *h && *n && *h == *n; h++, n++);
+        if (!*n) {
+            *offset += h_offset;
+            return 1;
+        }
+    }
+    
+    return 0;
 }
 
 static char *replace_chars(char *name)
 {
 	char *new_name;
-	char *offset;
+	long offset;
 	int i;
 
 	new_name = malloc(sizeof(char) * (strlen(name) + 1));
@@ -78,19 +91,22 @@ static char *replace_chars(char *name)
 	strcpy(new_name, name);
 
 	for (i = 0; i < COUNT_OF(r_chars); i++) {
-		offset = new_name;
-		while((offset = strstr(offset, r_chars[i].old_name)))
+		offset = 0;
+		while(o_strstr(new_name, r_chars[i].old_name, &offset)) {
+/*			printf("cuprite: %s -> %s\n", new_name, r_chars[i].old_name);
+			printf("lambda: %ld\n", offset);*/
 			if (!replace_substr(&new_name, &offset, r_chars[i]))
 				return NULL;
+		}
 	}
 
 	return new_name;
 }
 
-static char *replace_names(char *name)
+/*static char *replace_names(char *name)
 {
 	char *new_name;
-	char *offset;
+	long offset = 0;
 	int i;
 
 	for (i = 0; i < COUNT_OF(r_names); i++) {
@@ -110,13 +126,14 @@ static char *replace_names(char *name)
 	}
 
 	return NULL;
-}
+}*/
 
 static char *depth_first(DIR *directory, char *path)
 {
 	struct dirent *data;
 	char *full_path;
 	char *new_name = NULL;
+	char *new_name2 = NULL; /* testing */
 
 	while ((data = readdir(directory))) {
 		if (strcmp(data->d_name, ".") != 0
@@ -131,15 +148,20 @@ static char *depth_first(DIR *directory, char *path)
 			if (is_directory(full_path))
 				depth_first(opendir(full_path), full_path);
 				
-			new_name = replace_names(data->d_name);
-			new_name = (new_name)
+			/*new_name = replace_names(data->d_name);*/
+			new_name2 = (new_name)
 				? replace_chars(new_name)
 				: replace_chars(data->d_name);
-			if (new_name && strcmp(new_name, data->d_name) != 0) {
-				printf("%s -> %s\n", data->d_name, new_name);
+			if (new_name2 && strcmp(new_name2, data->d_name) != 0) {
+				printf("%s -> %s\n", data->d_name, new_name2);
 			}
+
+			free(new_name2);
+			free(full_path);
+
 		}
 	}
+	free(directory);
 
 	return NULL;
 }
