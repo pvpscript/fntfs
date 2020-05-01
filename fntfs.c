@@ -55,7 +55,8 @@ static int replace_substr(char **entry, long *offset,
 			return 0;
 	}
 
-	memcpy(*entry+*offset+nname_len, *entry+*offset+oname_len, entry_len-*offset-oname_len+1);
+	memcpy(*entry+*offset+nname_len, *entry+*offset+oname_len,
+			entry_len-*offset-oname_len+1);
 	memcpy(*entry+*offset, replace.new_name, nname_len);
 	*offset += nname_len;
 
@@ -79,90 +80,88 @@ static int o_strstr(const char *haystack, const char *needle, long *offset)
     return 0;
 }
 
-static char *replace_chars(char *name)
+static int replace_chars(char **dst, char *name)
 {
-	char *new_name;
 	long offset;
 	int i;
 
-	new_name = malloc(sizeof(char) * (strlen(name) + 1));
+/*	new_name = malloc(sizeof(char) * (strlen(name) + 1));
 	if (!new_name)
 		return NULL;
-	strcpy(new_name, name);
+	strcpy(new_name, name); */
 
 	for (i = 0; i < COUNT_OF(r_chars); i++) {
 		offset = 0;
-		while(o_strstr(new_name, r_chars[i].old_name, &offset)) {
-/*			printf("cuprite: %s -> %s\n", new_name, r_chars[i].old_name);
-			printf("lambda: %ld\n", offset);*/
-			if (!replace_substr(&new_name, &offset, r_chars[i]))
-				return NULL;
+		while(o_strstr(*dst, r_chars[i].old_name, &offset)) {
+			if (!replace_substr(&(*dst), &offset, r_chars[i]))
+				return 0;
 		}
 	}
 
-	return new_name;
+	return 1;
 }
 
-static char *replace_names(char *name)
+static int replace_names(char **dst, const char *name)
 {
-	char *new_name;
 	long offset = 0;
 	int i;
 
 	for (i = 0; i < COUNT_OF(r_names); i++) {
 		if (o_strstr(name, r_names[i].old_name, &offset) && !offset) {
-			new_name = malloc((strlen(name) + 1) * sizeof(*new_name));
-			if (!new_name)
-				return NULL;
-			strcpy(new_name, name);
+			*dst = realloc(*dst, (strlen(name)+1) * sizeof(**dst));
+			if (!*dst)
+				return 0;
 
-			if (!replace_substr(&new_name, &offset, r_names[i]))
-				return NULL;
+			if (!replace_substr(&(*dst), &offset, r_names[i]))
+				return 0;
 
-			return new_name;
+			return 1;
 		}
 	}
 
-	return NULL;
+	return 0;
 }
 
-static char *depth_first(DIR *directory, char *path)
+static char *replace_reserved(char *name)
+{
+	char *new_name = malloc((strlen(name)+1) * sizeof(*new_name));
+	if (!new_name)
+		return NULL;
+
+	strcpy(new_name, name);
+
+	/* TODO: Error control */
+	replace_names(&new_name, name);
+	replace_chars(&new_name, new_name);
+
+	return new_name;
+}
+
+static void depth_first(DIR *directory, char *path)
 {
 	struct dirent *data;
 	char *full_path;
 	char *new_name = NULL;
-	char *new_name2 = NULL; /* testing */
 
 	while ((data = readdir(directory))) {
 		if (strcmp(data->d_name, ".") != 0
 				&& strcmp(data->d_name, "..") != 0) {
 			full_path = cat_path(path, data->d_name);
 
-/*			printf("File serial number %lu\n", data->d_ino);
-			printf("Name of entry \"%s\"\n\n", data->d_name);
-
-			printf("FULLPATH: \"%s\"\n", full_path);*/
-	/*		getchar(); */
 			if (is_directory(full_path))
 				depth_first(opendir(full_path), full_path);
 				
-			new_name = replace_names(data->d_name);
-			new_name2 = (new_name)
-				? replace_chars(new_name)
-				: replace_chars(data->d_name);
-			if (new_name2 && strcmp(new_name2, data->d_name) != 0) {
-				printf("%s -> %s\n", data->d_name, new_name2);
+			new_name = replace_reserved(data->d_name);
+			if (new_name && strcmp(new_name, data->d_name) != 0) {
+				printf("%s -> %s\n", data->d_name, new_name);
 			}
 
 			free(new_name);
-			free(new_name2);
 			free(full_path);
-
 		}
 	}
-	free(directory);
 
-	return NULL;
+	free(directory);
 }
 
 int main(int argc, char **argv)
