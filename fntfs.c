@@ -212,7 +212,7 @@ int main(int argc, char **argv)
 
 		switch(setjmp(err_buf)) {
 			case 0:
-				depth_first(directory, argv[1]);
+				depth_first(directory, argv[i]);
 				break;
 			case ENOMEM:
 				die("Memory error: %s\n", strerror(ENOMEM));
