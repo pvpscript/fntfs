@@ -90,14 +90,8 @@ static void replace_chars(char **dst, char *name)
 	long offset;
 	int i;
 
-/*	new_name = malloc(sizeof(char) * (strlen(name) + 1));
-	if (!new_name)
-		return NULL;
-	strcpy(new_name, name); */
-
 	for (i = 0; i < COUNT_OF(r_chars); i++) {
-		offset = 0;
-		while(o_strstr(*dst, r_chars[i].old_name, &offset))
+		for (offset = 0; o_strstr(*dst, r_chars[i].old_name, &offset);)
 			replace_substr(&(*dst), &offset, r_chars[i]);
 	}
 }
@@ -162,9 +156,6 @@ static void depth_first(DIR *directory, char *path)
 
 int main(int argc, char **argv)
 {	
-/*	testing();
-	exit(0);*/
-
 	/* TODO: parameters.
 	 * 	-v: verbose (explain what is being done). E.g.: fntfs: renamed 'file_1' -> 'file_2'
 	 * 	-i: interactive (prompt before rename). E.g.: 
