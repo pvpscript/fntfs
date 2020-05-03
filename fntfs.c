@@ -135,20 +135,37 @@ static char *replace_reserved(char *name)
 	return new_name;
 }
 
+static char prompt()
+{
+	char c;
+	char buf;
+
+	while (scanf(" %c", &c) && c != 'N' && c != 'n' && c != 'Y' && c != 'y')
+		;
+	while ((buf = getchar()) && buf != '\n' && buf != EOF);
+
+	return tolower(c);
+}
+
 static int ren_entry(const char *old, const char *new, unsigned param_mask)
 {
-	/*if (param_mask & INTERACTIVE) {
-		printf("rename '%s' to '%s'?\n",
-				old, new);
-		if (tolower(getchar()) == 'y')
-			printf("\nMOVEINDOH\n");
-	}
-	if (param_mask & VERBOSE)
-		printf("renamed '%s' -> '%s'\n",
-				old, new);*/
-	printf("'%s' -> '%s'\n", old, new);
+	int ret = -1;
 
-	return 1;
+	if (param_mask & INTERACTIVE &&
+			access(new, F_OK) == 0) {
+		printf("fntfs: overwrite '%s'?", new);
+		if (prompt() == 'y')
+			ret = rename(old, new);
+	} else {
+		ret = rename(old, new);
+	}
+	
+	if (param_mask & VERBOSE &&
+			ret == 0)
+		printf("renamed '%s' -> '%s'\n",
+				old, new);
+
+	return (ret == 0);
 }
 
 static void depth_first(char *path, unsigned param_mask)
@@ -175,8 +192,10 @@ static void depth_first(char *path, unsigned param_mask)
 			if (strcmp(new_name, data->d_name) != 0) {
 				new_path = cat_path(path, new_name);
 
-				ren_entry(full_path, new_path, param_mask);
-				
+				if (!ren_entry(full_path, new_path,
+							param_mask))
+					longjmp(err_buf, errno);
+
 				free(new_path);
 			}
 
