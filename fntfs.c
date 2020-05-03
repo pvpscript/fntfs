@@ -191,7 +191,13 @@ int main(int argc, char **argv)
 	while((opt = getopt(argc, argv, "hiv")) != -1) {
 		switch (opt) {
 			case 'h':
-				break;
+				printf("Usage: %s [OPTION...] dir1 [dir2 ...]\n\n",
+						argv[0]);
+				printf("-h (help): show this menu\n");
+				printf("-i (interactive): prompt before rename\n");
+				printf("-v (verbose): explain what is being done\n");
+
+				exit(EXIT_SUCCESS);
 			case 'i':
 				param_mask |= INTERACTIVE;
 				break;
@@ -199,7 +205,7 @@ int main(int argc, char **argv)
 				param_mask |= VERBOSE;
 				break;
 			default: /* '?' */
-				die("Usage: %s [OPTIONS] dir1 [dir2 ...]\n",
+				die("Usage: %s [OPTION...] dir1 [dir2 ...]\n",
 						argv[0]);
 		}
 	}
