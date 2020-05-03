@@ -3,13 +3,11 @@
 #include <getopt.h>
 #include <string.h>
 #include <dirent.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <setjmp.h>
 #include <errno.h>
-#include <stdarg.h>
-#include <ctype.h>
+
+#include "util.h"
 
 typedef struct {
 	char *old_name;
@@ -54,17 +52,6 @@ char *cat_path(char *first, char *final)
 	return cat;
 }
 
-static int is_directory(const char *path)
-{
-	struct stat buf;
-
-	if (path == NULL)
-		return 0;
-	if (stat(path, &buf) != 0)
-		return 0;
-	return S_ISDIR(buf.st_mode);
-}
-
 void replace_substr(char **entry, long *offset, const Reserved replace)
 {
 	size_t entry_len = strlen(*entry);
@@ -82,23 +69,6 @@ void replace_substr(char **entry, long *offset, const Reserved replace)
 			entry_len-*offset-oname_len+1);
 	memcpy(*entry+*offset, replace.new_name, nname_len);
 	*offset += nname_len;
-}
-
-static int o_strstr(const char *haystack, const char *needle, long *offset)
-{
-    long h_offset = 0;
-    const char *h;
-    const char *n;
-    
-    for (haystack += *offset; *haystack; haystack++, h_offset++) {
-        for (h = haystack, n = needle; *h && *n && *h == *n; h++, n++);
-        if (!*n) {
-            *offset += h_offset;
-            return 1;
-        }
-    }
-    
-    return 0;
 }
 
 void replace_chars(char **dst, char *name)
@@ -141,18 +111,6 @@ char *replace_reserved(char *name)
 	replace_chars(&new_name, new_name);
 
 	return new_name;
-}
-
-static char prompt()
-{
-	char c;
-	char buf;
-
-	while (scanf(" %c", &c) && c != 'N' && c != 'n' && c != 'Y' && c != 'y')
-		;
-	while ((buf = getchar()) && buf != '\n' && buf != EOF);
-
-	return tolower(c);
 }
 
 int ren_entry(const char *old, const char *new, unsigned param_mask)
@@ -213,17 +171,6 @@ void depth_first(char *path, unsigned param_mask)
 	}
 
 	free(directory);
-}
-
-static void die(char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-
-	exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[])
