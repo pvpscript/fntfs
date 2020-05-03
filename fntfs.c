@@ -147,8 +147,8 @@ void depth_first(char *path, unsigned param_mask)
 		longjmp(err_buf, errno);
 
 	while ((data = readdir(directory))) {
-		if (strcmp(data->d_name, ".") != 0
-				&& strcmp(data->d_name, "..") != 0) {
+		if (strcmp(data->d_name, ".") != 0 &&
+				strcmp(data->d_name, "..") != 0) {
 			full_path = cat_path(path, data->d_name);
 
 			if (is_directory(full_path))
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 {	
 	/* Parameters:
 	 * 	-v: verbose (explain what is being done). E.g.: fntfs: renamed 'file_1' -> 'file_2'
-	 * 	-i: interactive (prompt before rename). E.g.: 
+	 * 	-i: interactive (prompt before rename in case the new file name already exists)
 	 */
 
 	unsigned param_mask = 0;
