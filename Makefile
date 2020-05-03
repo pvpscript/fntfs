@@ -2,7 +2,7 @@ CC = cc
 DEBUG = -g
 CFLAGS = ${DEBUG} -ansi -pedantic -Wall
 
-SRC = fntfs.c
+SRC = fntfs.c util.c
 OBJ = ${SRC:.c=.o}
 
 all: fntfs
