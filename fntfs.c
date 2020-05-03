@@ -169,6 +169,11 @@ int main(int argc, char **argv)
 /*	testing();
 	exit(0);*/
 
+	/* TODO: parameters.
+	 * 	-v: verbose (explain what is being done). E.g.: fntfs: renamed 'file_1' -> 'file_2'
+	 * 	-i: interactive (prompt before rename). E.g.: 
+	 */
+
 	DIR *directory = opendir(argv[1]);	
 
 	depth_first(directory, argv[1]);
