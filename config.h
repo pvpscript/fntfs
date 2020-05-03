@@ -1,8 +1,4 @@
-#ifndef DEFS_H
-#define DEFS_H
-
 #define MAX_PATH 260
-#define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 
 static const Reserved r_chars[] = {
 	{"<",		"[lt]"},
@@ -40,6 +36,3 @@ static const Reserved r_names[] = {
 	{"LPT8",	"_LPT8_"},
 	{"LPT9",	"_LPT9_"},
 };
-
-
-#endif /* DEFS_H */
