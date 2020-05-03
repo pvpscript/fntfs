@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <getopt.h>
 #include <string.h>
 #include <dirent.h>
 #include <sys/types.h>
@@ -7,6 +8,7 @@
 #include <unistd.h>
 #include <setjmp.h>
 #include <errno.h>
+#include <stdarg.h>
 
 typedef struct {
 	char *old_name;
@@ -15,7 +17,12 @@ typedef struct {
 
 #include "config.h"
 
-static jmp_buf err_buf;
+enum params {
+	INTERACTIVE 	= (1u << 0),
+	VERBOSE 	= (1u << 1)
+};
+
+static jmp_buf err_buf; /* error handling buffer */
 
 static char *cat_path(char *first, char *final)
 {
@@ -91,8 +98,8 @@ static void replace_chars(char **dst, char *name)
 	int i;
 
 	for (i = 0; i < COUNT_OF(r_chars); i++) {
-		for (offset = 0; o_strstr(*dst, r_chars[i].old_name, &offset);)
-			replace_substr(&(*dst), &offset, r_chars[i]);
+		for (offset = 0; o_strstr(*dst, r_chars[i].old_name, &offset);
+		     replace_substr(&(*dst), &offset, r_chars[i]));
 	}
 }
 
@@ -131,7 +138,8 @@ static void depth_first(DIR *directory, char *path)
 {
 	struct dirent *data;
 	char *full_path;
-	char *new_name = NULL;
+	char *new_name;
+	char *new_path;
 
 	while ((data = readdir(directory))) {
 		if (strcmp(data->d_name, ".") != 0
@@ -143,7 +151,11 @@ static void depth_first(DIR *directory, char *path)
 				
 			new_name = replace_reserved(data->d_name);
 			if (strcmp(new_name, data->d_name) != 0) {
-				printf("%s -> %s\n", data->d_name, new_name);
+				new_path = cat_path(path, new_name);
+
+				printf("'%s' -> '%s'\n", full_path, new_path);
+
+				free(new_path);
 			}
 
 			free(new_name);
@@ -154,6 +166,16 @@ static void depth_first(DIR *directory, char *path)
 	free(directory);
 }
 
+void die(char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	exit(EXIT_FAILURE);
+}
+
 int main(int argc, char **argv)
 {	
 	/* TODO: parameters.
@@ -161,21 +183,43 @@ int main(int argc, char **argv)
 	 * 	-i: interactive (prompt before rename). E.g.: 
 	 */
 
-	DIR *directory = opendir(argv[1]);	
+	DIR *directory;
+	int opt;
+	int param_mask = 0;
+	int i;
 
-	switch(setjmp(err_buf)) {
-		case 0:
-			depth_first(directory, argv[1]);
-			break;
-		case ENOMEM:
-			fprintf(stderr, "Memory error: %s\n",
-					strerror(ENOMEM));
-			exit(EXIT_FAILURE);
-		default:
-			fprintf(stderr, "Unknown error: %s\n",
-					strerror(errno));
-			exit(EXIT_FAILURE);
+	while((opt = getopt(argc, argv, "hiv")) != -1) {
+		switch (opt) {
+			case 'h':
+				break;
+			case 'i':
+				param_mask |= INTERACTIVE;
+				break;
+			case 'v':
+				param_mask |= VERBOSE;
+				break;
+			default: /* '?' */
+				die("Usage: %s [OPTIONS] dir1 [dir2 ...]\n",
+						argv[0]);
+		}
 	}
 
-	return 0;
+	if (optind >= argc)
+		die("Missing directory");
+
+	for (i = optind; i < argc; i++) {
+		directory = opendir(argv[i]);
+
+		switch(setjmp(err_buf)) {
+			case 0:
+				depth_first(directory, argv[1]);
+				break;
+			case ENOMEM:
+				die("Memory error: %s\n", strerror(ENOMEM));
+			default:
+				die("Unknown error: %s\n", strerror(errno));
+		}
+	}
+
+	exit(EXIT_SUCCESS);
 }
