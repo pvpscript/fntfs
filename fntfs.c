@@ -198,7 +198,7 @@ void die(char *fmt, ...) {
 	exit(EXIT_FAILURE);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {	
 	/* Parameters:
 	 * 	-v: verbose (explain what is being done). E.g.: fntfs: renamed 'file_1' -> 'file_2'
@@ -239,10 +239,12 @@ int main(int argc, char **argv)
 			for (i = optind; i < argc; i++)
 				depth_first(argv[i], param_mask); 
 			break;
-		case ENOMEM:
+		case ENOMEM: /* Memory error */
 			die("Memory error: %s\n", strerror(ENOMEM));
-		case ENOENT:
+		case ENOENT: /* Missing entry error */
 			die("%s: %s\n", argv[i], strerror(ENOENT));
+		case EACCES: /* Access error */
+			die("'%s': %s\n", argv[i], strerror(EACCES));
 		default:
 			die("Unknown error: %s\n", strerror(errno));
 	}
