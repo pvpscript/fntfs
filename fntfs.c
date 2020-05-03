@@ -25,7 +25,16 @@ enum params {
 
 static jmp_buf err_buf; /* error handling buffer */
 
-static char *cat_path(char *first, char *final)
+/* function declarations */
+static char *cat_path(char *first, char *final);
+static void replace_substr(char **entry, long *offset, const Reserved replace);
+static void replace_chars(char **dst, char *name);
+static void replace_names(char **dst, const char *name);
+static char *replace_reserved(char *name);
+static int ren_entry(const char *old, const char *new, unsigned param_mask);
+static void depth_first(char *path, unsigned param_mask);
+
+char *cat_path(char *first, char *final)
 {
 	size_t first_len = strlen(first);
 	size_t final_len = strlen(final);
@@ -56,8 +65,7 @@ static int is_directory(const char *path)
 	return S_ISDIR(buf.st_mode);
 }
 
-static void replace_substr(char **entry, long *offset,
-		const Reserved replace)
+void replace_substr(char **entry, long *offset, const Reserved replace)
 {
 	size_t entry_len = strlen(*entry);
 	size_t oname_len = strlen(replace.old_name);
@@ -93,7 +101,7 @@ static int o_strstr(const char *haystack, const char *needle, long *offset)
     return 0;
 }
 
-static void replace_chars(char **dst, char *name)
+void replace_chars(char **dst, char *name)
 {
 	long offset;
 	int i;
@@ -104,7 +112,7 @@ static void replace_chars(char **dst, char *name)
 	}
 }
 
-static void replace_names(char **dst, const char *name)
+void replace_names(char **dst, const char *name)
 {
 	long offset = 0;
 	int i;
@@ -121,7 +129,7 @@ static void replace_names(char **dst, const char *name)
 	}
 }
 
-static char *replace_reserved(char *name)
+char *replace_reserved(char *name)
 {
 	char *new_name = malloc((strlen(name)+1) * sizeof(*new_name));
 	if (!new_name)
@@ -147,7 +155,7 @@ static char prompt()
 	return tolower(c);
 }
 
-static int ren_entry(const char *old, const char *new, unsigned param_mask)
+int ren_entry(const char *old, const char *new, unsigned param_mask)
 {
 	int ret = -1;
 
@@ -168,7 +176,7 @@ static int ren_entry(const char *old, const char *new, unsigned param_mask)
 	return (ret == 0);
 }
 
-static void depth_first(char *path, unsigned param_mask)
+void depth_first(char *path, unsigned param_mask)
 {
 	struct dirent *data;
 	DIR *directory;
@@ -207,7 +215,8 @@ static void depth_first(char *path, unsigned param_mask)
 	free(directory);
 }
 
-void die(char *fmt, ...) {
+static void die(char *fmt, ...)
+{
 	va_list ap;
 	va_start(ap, fmt);
 
