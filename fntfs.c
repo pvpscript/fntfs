@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <setjmp.h>
+#include <errno.h>
 
 typedef struct {
 	char *old_name;
@@ -12,6 +14,8 @@ typedef struct {
 } Reserved;
 
 #include "config.h"
+
+static jmp_buf err_buf;
 
 static char *cat_path(char *first, char *final)
 {
@@ -25,6 +29,9 @@ static char *cat_path(char *first, char *final)
 		first_len++;
 
 	cat = malloc(sizeof(char) * first_len + final_len + 1);
+	if (!cat)
+		longjmp(err_buf, ENOMEM);
+
 	sprintf(cat, "%s/%s", first, final);
 
 	return cat;
@@ -41,7 +48,7 @@ static int is_directory(const char *path)
 	return S_ISDIR(buf.st_mode);
 }
 
-static int replace_substr(char **entry, long *offset,
+static void replace_substr(char **entry, long *offset,
 		const Reserved replace)
 {
 	size_t entry_len = strlen(*entry);
@@ -52,15 +59,13 @@ static int replace_substr(char **entry, long *offset,
 		*entry = realloc(*entry, sizeof(char) 
 				* (entry_len + nname_len - oname_len + 1));
 		if (!*entry)
-			return 0;
+			longjmp(err_buf, ENOMEM);
 	}
 
 	memcpy(*entry+*offset+nname_len, *entry+*offset+oname_len,
 			entry_len-*offset-oname_len+1);
 	memcpy(*entry+*offset, replace.new_name, nname_len);
 	*offset += nname_len;
-
-	return 1;
 }
 
 static int o_strstr(const char *haystack, const char *needle, long *offset)
@@ -80,7 +85,7 @@ static int o_strstr(const char *haystack, const char *needle, long *offset)
     return 0;
 }
 
-static int replace_chars(char **dst, char *name)
+static void replace_chars(char **dst, char *name)
 {
 	long offset;
 	int i;
@@ -92,16 +97,12 @@ static int replace_chars(char **dst, char *name)
 
 	for (i = 0; i < COUNT_OF(r_chars); i++) {
 		offset = 0;
-		while(o_strstr(*dst, r_chars[i].old_name, &offset)) {
-			if (!replace_substr(&(*dst), &offset, r_chars[i]))
-				return 0;
-		}
+		while(o_strstr(*dst, r_chars[i].old_name, &offset))
+			replace_substr(&(*dst), &offset, r_chars[i]);
 	}
-
-	return 1;
 }
 
-static int replace_names(char **dst, const char *name)
+static void replace_names(char **dst, const char *name)
 {
 	long offset = 0;
 	int i;
@@ -110,27 +111,22 @@ static int replace_names(char **dst, const char *name)
 		if (o_strstr(name, r_names[i].old_name, &offset) && !offset) {
 			*dst = realloc(*dst, (strlen(name)+1) * sizeof(**dst));
 			if (!*dst)
-				return 0;
+				longjmp(err_buf, ENOMEM);
 
-			if (!replace_substr(&(*dst), &offset, r_names[i]))
-				return 0;
-
-			return 1;
+			replace_substr(&(*dst), &offset, r_names[i]);
+			break;
 		}
 	}
-
-	return 0;
 }
 
 static char *replace_reserved(char *name)
 {
 	char *new_name = malloc((strlen(name)+1) * sizeof(*new_name));
 	if (!new_name)
-		return NULL;
+		longjmp(err_buf, ENOMEM);
 
 	strcpy(new_name, name);
 
-	/* TODO: Error control */
 	replace_names(&new_name, name);
 	replace_chars(&new_name, new_name);
 
@@ -152,7 +148,7 @@ static void depth_first(DIR *directory, char *path)
 				depth_first(opendir(full_path), full_path);
 				
 			new_name = replace_reserved(data->d_name);
-			if (new_name && strcmp(new_name, data->d_name) != 0) {
+			if (strcmp(new_name, data->d_name) != 0) {
 				printf("%s -> %s\n", data->d_name, new_name);
 			}
 
@@ -176,7 +172,19 @@ int main(int argc, char **argv)
 
 	DIR *directory = opendir(argv[1]);	
 
-	depth_first(directory, argv[1]);
+	switch(setjmp(err_buf)) {
+		case 0:
+			depth_first(directory, argv[1]);
+			break;
+		case ENOMEM:
+			fprintf(stderr, "Memory error: %s\n",
+					strerror(ENOMEM));
+			exit(EXIT_FAILURE);
+		default:
+			fprintf(stderr, "Unknown error: %s\n",
+					strerror(errno));
+			exit(EXIT_FAILURE);
+	}
 
 	return 0;
 }
