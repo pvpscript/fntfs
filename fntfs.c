@@ -134,9 +134,10 @@ static char *replace_reserved(char *name)
 	return new_name;
 }
 
-static void depth_first(DIR *directory, char *path)
+static void depth_first(char *path, unsigned param_mask)
 {
 	struct dirent *data;
+	DIR *directory = opendir(path);
 	char *full_path;
 	char *new_name;
 	char *new_path;
@@ -147,7 +148,7 @@ static void depth_first(DIR *directory, char *path)
 			full_path = cat_path(path, data->d_name);
 
 			if (is_directory(full_path))
-				depth_first(opendir(full_path), full_path);
+				depth_first(full_path, param_mask);
 				
 			new_name = replace_reserved(data->d_name);
 			if (strcmp(new_name, data->d_name) != 0) {
@@ -178,14 +179,13 @@ void die(char *fmt, ...) {
 
 int main(int argc, char **argv)
 {	
-	/* TODO: parameters.
+	/* Parameters:
 	 * 	-v: verbose (explain what is being done). E.g.: fntfs: renamed 'file_1' -> 'file_2'
 	 * 	-i: interactive (prompt before rename). E.g.: 
 	 */
 
-	DIR *directory;
+	unsigned param_mask = 0;
 	int opt;
-	int param_mask = 0;
 	int i;
 
 	while((opt = getopt(argc, argv, "hiv")) != -1) {
@@ -207,18 +207,15 @@ int main(int argc, char **argv)
 	if (optind >= argc)
 		die("Missing directory");
 
-	for (i = optind; i < argc; i++) {
-		directory = opendir(argv[i]);
-
-		switch(setjmp(err_buf)) {
-			case 0:
-				depth_first(directory, argv[i]);
-				break;
-			case ENOMEM:
-				die("Memory error: %s\n", strerror(ENOMEM));
-			default:
-				die("Unknown error: %s\n", strerror(errno));
-		}
+	switch(setjmp(err_buf)) {
+		case 0:
+			for (i = optind; i < argc; i++)
+				depth_first(argv[i], param_mask); 
+			break;
+		case ENOMEM:
+			die("Memory error: %s\n", strerror(ENOMEM));
+		default:
+			die("Unknown error: %s\n", strerror(errno));
 	}
 
 	exit(EXIT_SUCCESS);
