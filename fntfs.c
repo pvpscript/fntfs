@@ -9,6 +9,7 @@
 #include <setjmp.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 typedef struct {
 	char *old_name;
@@ -37,7 +38,7 @@ static char *cat_path(char *first, char *final)
 
 	cat = malloc(sizeof(char) * first_len + final_len + 1);
 	if (!cat)
-		longjmp(err_buf, ENOMEM);
+		longjmp(err_buf, errno);
 
 	sprintf(cat, "%s/%s", first, final);
 
@@ -66,7 +67,7 @@ static void replace_substr(char **entry, long *offset,
 		*entry = realloc(*entry, sizeof(char) 
 				* (entry_len + nname_len - oname_len + 1));
 		if (!*entry)
-			longjmp(err_buf, ENOMEM);
+			longjmp(err_buf, errno);
 	}
 
 	memcpy(*entry+*offset+nname_len, *entry+*offset+oname_len,
@@ -112,7 +113,7 @@ static void replace_names(char **dst, const char *name)
 		if (o_strstr(name, r_names[i].old_name, &offset) && !offset) {
 			*dst = realloc(*dst, (strlen(name)+1) * sizeof(**dst));
 			if (!*dst)
-				longjmp(err_buf, ENOMEM);
+				longjmp(err_buf, errno);
 
 			replace_substr(&(*dst), &offset, r_names[i]);
 			break;
@@ -124,7 +125,7 @@ static char *replace_reserved(char *name)
 {
 	char *new_name = malloc((strlen(name)+1) * sizeof(*new_name));
 	if (!new_name)
-		longjmp(err_buf, ENOMEM);
+		longjmp(err_buf, errno);
 
 	strcpy(new_name, name);
 
@@ -134,13 +135,33 @@ static char *replace_reserved(char *name)
 	return new_name;
 }
 
+static int ren_entry(const char *old, const char *new, unsigned param_mask)
+{
+	/*if (param_mask & INTERACTIVE) {
+		printf("rename '%s' to '%s'?\n",
+				old, new);
+		if (tolower(getchar()) == 'y')
+			printf("\nMOVEINDOH\n");
+	}
+	if (param_mask & VERBOSE)
+		printf("renamed '%s' -> '%s'\n",
+				old, new);*/
+	printf("'%s' -> '%s'\n", old, new);
+
+	return 1;
+}
+
 static void depth_first(char *path, unsigned param_mask)
 {
 	struct dirent *data;
-	DIR *directory = opendir(path);
+	DIR *directory;
 	char *full_path;
 	char *new_name;
 	char *new_path;
+
+	directory = opendir(path);
+	if (!directory)
+		longjmp(err_buf, errno);
 
 	while ((data = readdir(directory))) {
 		if (strcmp(data->d_name, ".") != 0
@@ -154,8 +175,8 @@ static void depth_first(char *path, unsigned param_mask)
 			if (strcmp(new_name, data->d_name) != 0) {
 				new_path = cat_path(path, new_name);
 
-				printf("'%s' -> '%s'\n", full_path, new_path);
-
+				ren_entry(full_path, new_path, param_mask);
+				
 				free(new_path);
 			}
 
@@ -220,6 +241,8 @@ int main(int argc, char **argv)
 			break;
 		case ENOMEM:
 			die("Memory error: %s\n", strerror(ENOMEM));
+		case ENOENT:
+			die("%s: %s\n", argv[i], strerror(ENOENT));
 		default:
 			die("Unknown error: %s\n", strerror(errno));
 	}
