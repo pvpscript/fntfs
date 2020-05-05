@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (optind >= argc)
-		die("Missing directory");
+		die("Missing directory\n");
 
 	switch(setjmp(err_buf)) {
 		case 0:
