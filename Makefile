@@ -2,6 +2,8 @@ CC = cc
 DEBUG = -g
 CFLAGS = ${DEBUG} -ansi -pedantic -Wall
 
+PREFIX = /usr/local
+
 SRC = fntfs.c util.c
 OBJ = ${SRC:.c=.o}
 
@@ -16,4 +18,14 @@ fntfs: ${OBJ}
 	${CC} -o $@ ${OBJ} ${CFLAGS}
 
 clean:
-	rm *.o
+	rm -f fntfs ${OBJ}
+
+install: all
+	mkdir -p ${DESTDIR}${PREFIX}/bin
+	cp -f fntfs ${DESTDIR}${PREFIX}/bin
+	chmod 755 ${DESTDIR}${PREFIX}/bin/fntfs
+
+uninstall:
+	rm -f ${DESTDIR}${PREFIX}/bin/fntfs
+
+.PHONY: all clean install uninstall
