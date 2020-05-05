@@ -1,5 +1,5 @@
 # Introduction
-Friendly NTFS is a tool for detecting files and folder with names that would create problems when read under the Windows operational system and rename them in a friendly way.
+Friendly NTFS (fntfs) is a tool for detecting files and folder with names that would create problems when read under the Windows operational system and rename them in a friendly way.
 
 ## Why?
 The Linux kernel is more flexible when it comes to naming files, which means that a user operating a Linux machine is able to name a file or folder pretty much anything they want, even when in an NTFS file system. This hability to give wathever name to a file or folder is good, but it might create some problems when trying to open those said entries inside a Windows machine because of reserved names and characters.
