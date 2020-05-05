@@ -43,7 +43,7 @@ char *cat_path(char *first, char *final)
 	else
 		first_len++;
 
-	cat = malloc(sizeof(char) * first_len + final_len + 1);
+	cat = malloc((first_len + final_len + 1) * sizeof(*cat));
 	if (!cat)
 		longjmp(err_buf, errno);
 
@@ -59,14 +59,14 @@ void replace_substr(char **entry, long *offset, const Reserved replace)
 	size_t nname_len = strlen(replace.new_name);
 
 	if (nname_len - oname_len > 0) {
-		*entry = realloc(*entry, sizeof(char) 
-				* (entry_len + nname_len - oname_len + 1));
+		*entry = realloc(*entry, (entry_len + nname_len
+					  - oname_len + 1) * sizeof(**entry));
 		if (!*entry)
 			longjmp(err_buf, errno);
 	}
 
 	memcpy(*entry+*offset+nname_len, *entry+*offset+oname_len,
-			entry_len-*offset-oname_len+1);
+	       entry_len-*offset-oname_len+1);
 	memcpy(*entry+*offset, replace.new_name, nname_len);
 	*offset += nname_len;
 }
@@ -128,8 +128,7 @@ int ren_entry(const char *old, const char *new, unsigned param_mask)
 	
 	if (param_mask & VERBOSE &&
 			ret == 0)
-		printf("renamed '%s' -> '%s'\n",
-				old, new);
+		printf("renamed '%s' -> '%s'\n", old, new);
 
 	return (ret == 0);
 }
@@ -159,7 +158,7 @@ void depth_first(char *path, unsigned param_mask)
 				new_path = cat_path(path, new_name);
 
 				if (!ren_entry(full_path, new_path,
-							param_mask))
+					       param_mask))
 					longjmp(err_buf, errno);
 
 				free(new_path);
@@ -175,11 +174,6 @@ void depth_first(char *path, unsigned param_mask)
 
 int main(int argc, char *argv[])
 {	
-	/* Parameters:
-	 * 	-v: verbose (explain what is being done). E.g.: fntfs: renamed 'file_1' -> 'file_2'
-	 * 	-i: interactive (prompt before rename in case the new file name already exists)
-	 */
-
 	unsigned param_mask = 0;
 	int opt;
 	int i;
@@ -187,7 +181,7 @@ int main(int argc, char *argv[])
 	while((opt = getopt(argc, argv, "hiv")) != -1) {
 		switch (opt) {
 			case 'h':
-				printf("Usage: %s [OPTION...] dir1 [dir2 ...]\n\n",
+				printf("Usage: %s [OPTION...] path1 [path2 ...]\n\n",
 						argv[0]);
 				printf("-h (help): show this menu\n");
 				printf("-i (interactive): prompt before rename\n");
