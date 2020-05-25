@@ -1,5 +1,3 @@
-#define MAX_PATH 260
-
 static const Reserved r_chars[] = {
 	/* reserved char */		/* replace with */
 	{"<",				"[lt]"},
