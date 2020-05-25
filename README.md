@@ -28,6 +28,3 @@ cd friendly-ntfs
 make
 sudo make install
 ```
-
-### TODO
-* Display a warning if the entry has depth greater than the default maximum allowed.
