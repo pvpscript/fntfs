@@ -10,7 +10,7 @@ Therefore, this program was created based on the [Windows naming conventions](ht
 All configurations and naming rules are set under the `config.h` file.
 
 # Usage
-`./fntfs [OPTION...] path1 [path2 ...]`
+`fntfs [OPTION...] path1 [path2 ...]`
 
 ## Options
 `-h` Show help and exit;
